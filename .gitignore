@@ -1,0 +1,10 @@
+build/
+cmake-build-*/
+.vscode/
+.idea/
+*.elf
+*.bin
+*.uf2
+*.map
+*.log
+*.swp
