@@ -15,6 +15,7 @@ add_executable(rc2014_fpu
     src/registers.cpp
     src/operations.cpp
     src/opcode_ram.cpp
+    src/debug_interface.cpp
 )
 
 target_include_directories(rc2014_fpu

@@ -4,6 +4,7 @@
 #include "pico/stdlib.h"
 
 #include "fpu/bus_interface.hpp"
+#include "fpu/debug_interface.hpp"
 #include "fpu/opcode_ram.hpp"
 #include "fpu/operations.hpp"
 #include "fpu/registers.hpp"
@@ -54,11 +55,21 @@ bool handle_transaction(SystemContext& context, const BusTransaction& tx) {
     return false;
 }
 
-void run_bus_loop(SystemContext& context) {
+void run_bus_loop(SystemContext& context, DebugInterface& debug) {
+    debug.log("Entering bus service loop");
     while (true) {
+        debug.poll();
         auto transaction = context.bus->poll();
         if (transaction.has_value()) {
             context.bus->set_busy(true);
+            if (debug.enabled()) {
+                char buffer[96] = {};
+                snprintf(buffer, sizeof(buffer),
+                         "Bus %s addr=%u payload=%u bytes",
+                         transaction->direction == BusDirection::Write ? "WRITE" : "READ",
+                         transaction->address, static_cast<unsigned int>(transaction->payload.size()));
+                debug.log(buffer);
+            }
             handle_transaction(context, *transaction);
             context.bus->set_busy(false);
         }
@@ -71,12 +82,16 @@ void run_bus_loop(SystemContext& context) {
 int main() {
     stdio_init_all();
 
+    DebugInterface debug{};
+    debug.init();
+
     PollingBus bus{};
     SystemContext context{};
     context.bus = &bus;
     context.registers.clear();
     context.opcode_ram.clear();
 
-    run_bus_loop(context);
+    debug.log("FPU firmware ready. Listening for commands.");
+    run_bus_loop(context, debug);
     return 0;
 }
